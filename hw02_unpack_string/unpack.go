@@ -22,7 +22,12 @@ func Unpack(input string) (string, error) {
 		isEmptyPackedChar := packedChar != 0
 
 		if isNumber && isEmptyPackedChar {
-			if intVar, _ := strconv.Atoi(string(char)); intVar != 0 {
+			intVar, err := strconv.Atoi(string(char))
+			if err != nil {
+				return "", ErrInvalidString
+			}
+
+			if intVar != 0 {
 				result.WriteString(strings.Repeat(string(packedChar), intVar))
 			}
 
