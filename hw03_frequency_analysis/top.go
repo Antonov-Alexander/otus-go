@@ -7,6 +7,12 @@ import (
 	"strings"
 )
 
+var (
+	symbolsRegexp = regexp.MustCompile(`[.,!:;'"]+`)
+	hyphenRegexp  = regexp.MustCompile(`(-\s)+|(\s-)+`)
+	spacesRegexp  = regexp.MustCompile(`[\s|\n]+`)
+)
+
 func Top10(text string, fineMode bool) []string {
 	words := getTextWords(text, fineMode)
 	if len(words) == 0 {
@@ -25,9 +31,11 @@ func Top10(text string, fineMode bool) []string {
 	}
 
 	// конвертим в слайс
-	wordsSlice := make([]wordInfo, 0)
+	counter := 0
+	wordsSlice := make([]wordInfo, len(wordsCounts))
 	for word, count := range wordsCounts {
-		wordsSlice = append(wordsSlice, wordInfo{word, count})
+		wordsSlice[counter] = wordInfo{word, count}
+		counter++
 	}
 
 	// сортируем
@@ -41,9 +49,9 @@ func Top10(text string, fineMode bool) []string {
 	resultSlice := wordsSlice[:resultSliceLength]
 
 	// конвертим в слайс строк
-	result := make([]string, 0)
-	for _, element := range resultSlice {
-		result = append(result, element.Word)
+	result := make([]string, len(resultSlice))
+	for i, element := range resultSlice {
+		result[i] = element.Word
 	}
 
 	return result
@@ -51,12 +59,12 @@ func Top10(text string, fineMode bool) []string {
 
 func getTextWords(text string, fineMode bool) []string {
 	if fineMode {
-		text = regexp.MustCompile(`[.,!:;'"]+`).ReplaceAllString(text, " ")
-		text = regexp.MustCompile(`(-\s)+|(\s-)+`).ReplaceAllString(text, " ")
+		text = symbolsRegexp.ReplaceAllString(text, " ")
+		text = hyphenRegexp.ReplaceAllString(text, " ")
 		text = strings.ToLower(text)
 	}
 
-	text = regexp.MustCompile(`[\s|\n]+`).ReplaceAllString(text, " ")
+	text = spacesRegexp.ReplaceAllString(text, " ")
 	text = strings.Trim(text, " ")
 	return strings.Fields(text)
 }
