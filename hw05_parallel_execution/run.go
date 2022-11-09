@@ -18,8 +18,8 @@ func Run(tasks []Task, n, m int) error {
 	wg := sync.WaitGroup{}
 	ch := make(chan Task)
 
-	var errorsCount int32
-	errorsLimit := int32(m)
+	var errCount atomic.Int32 //nolint:typecheck
+	errLimit := int32(m)
 
 	for i := 0; i < n; i++ {
 		wg.Add(1)
@@ -27,27 +27,29 @@ func Run(tasks []Task, n, m int) error {
 			defer wg.Done()
 
 			for task := range ch {
-				if atomic.LoadInt32(&errorsCount) >= errorsLimit {
-					continue
+				if errCount.Load() >= errLimit { //nolint:typecheck
+					break
 				}
 
 				if err := task(); err != nil {
-					atomic.AddInt32(&errorsCount, 1)
+					errCount.Add(1)
 				}
 			}
 		}()
 	}
 
 	for _, task := range tasks {
-		if atomic.LoadInt32(&errorsCount) < errorsLimit {
-			ch <- task
+		if errCount.Load() >= errLimit { //nolint:typecheck
+			break
 		}
+
+		ch <- task
 	}
 
 	close(ch)
 	wg.Wait()
 
-	if atomic.LoadInt32(&errorsCount) >= errorsLimit {
+	if errCount.Load() >= errLimit { //nolint:typecheck
 		return ErrErrorsLimitExceeded
 	}
 

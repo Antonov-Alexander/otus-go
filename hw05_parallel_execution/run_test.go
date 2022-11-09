@@ -16,19 +16,30 @@ func TestRun(t *testing.T) {
 
 	t.Run("if were errors in first M tasks, than finished not more N+M tasks", func(t *testing.T) {
 		tasksCount := 50
-		tasks := make([]Task, 0, tasksCount)
+
+		stopCh := make(chan struct{}, tasksCount)
+		defer close(stopCh)
+
+		sleepTime := time.Millisecond * 10
+		executionTime := sleepTime * time.Duration(tasksCount+1)
+
+		var stopEventsCount int
+		require.Eventually(t, func() bool {
+			stopCh <- struct{}{}
+			stopEventsCount++
+			return stopEventsCount == tasksCount
+		}, executionTime, sleepTime)
 
 		var runTasksCount int32
-		taskSleep := time.Millisecond * 100
+		tasks := make([]Task, 0, tasksCount)
 
 		for i := 0; i < tasksCount; i++ {
 			err := fmt.Errorf("error from task %d", i)
 			tasks = append(tasks, func() error {
 				atomic.AddInt32(&runTasksCount, 1)
-				require.Eventually(t, func() bool {
-					return true
-				}, taskSleep*2, taskSleep)
-
+				for range stopCh {
+					break
+				}
 				return err
 			})
 		}
@@ -43,22 +54,29 @@ func TestRun(t *testing.T) {
 
 	t.Run("tasks without errors", func(t *testing.T) {
 		tasksCount := 50
-		tasks := make([]Task, 0, tasksCount)
+
+		stopCh := make(chan struct{}, tasksCount)
+		defer close(stopCh)
+
+		sleepTime := time.Millisecond * 10
+		executionTime := sleepTime * time.Duration(tasksCount+1)
+
+		var stopEventsCount int
+		require.Eventually(t, func() bool {
+			stopCh <- struct{}{}
+			stopEventsCount++
+			return stopEventsCount == tasksCount
+		}, executionTime, sleepTime)
 
 		var runTasksCount int32
-		var sumTime time.Duration
+		tasks := make([]Task, 0, tasksCount)
 
 		for i := 0; i < tasksCount; i++ {
-			taskSleep := time.Millisecond * 100
-			sumTime += taskSleep
-
 			tasks = append(tasks, func() error {
 				atomic.AddInt32(&runTasksCount, 1)
-
-				require.Eventually(t, func() bool {
-					return true
-				}, taskSleep*2, taskSleep)
-
+				for range stopCh {
+					break
+				}
 				return nil
 			})
 		}
@@ -66,20 +84,25 @@ func TestRun(t *testing.T) {
 		workersCount := 5
 		maxErrorsCount := 1
 
-		start := time.Now()
 		err := Run(tasks, workersCount, maxErrorsCount)
-		elapsedTime := time.Since(start)
-		require.NoError(t, err)
 
+		require.NoError(t, err)
 		require.Equal(t, runTasksCount, int32(tasksCount), "not all tasks were completed")
-		require.LessOrEqual(t, int64(elapsedTime), int64(sumTime/2), "tasks were run sequentially?")
 	})
 
 	t.Run("negative errors limit test", func(t *testing.T) {
+		tests := []struct {
+			errorsLimit   int
+			expectedError error
+		}{
+			{errorsLimit: 0, expectedError: ErrErrorsLimitExceeded},
+			{errorsLimit: -1, expectedError: ErrErrorsLimitExceeded},
+		}
+
 		tasks := make([]Task, 0)
-		for _, i := range []int{0, -1} {
-			err := Run(tasks, 10, i)
-			require.Truef(t, errors.Is(err, ErrErrorsLimitExceeded), "actual err - %v", err)
+		for _, test := range tests {
+			err := Run(tasks, 10, test.errorsLimit)
+			require.Truef(t, errors.Is(err, test.expectedError), "actual err - %v", err)
 		}
 	})
 
@@ -96,7 +119,6 @@ func TestRun(t *testing.T) {
 			},
 		}
 
-		// интересно, почему здесь не работает присвоение ":=", ведь ранее "_" не объявлялась
 		_ = Run(tasks, 1, 1)
 	})
 }
