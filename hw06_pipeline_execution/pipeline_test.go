@@ -120,4 +120,31 @@ func TestPipeline(t *testing.T) {
 
 		require.Len(t, result, 1)
 	})
+
+	t.Run("Empty stages", func(t *testing.T) {
+		in := make(Bi)
+		done := make(Bi)
+		data := []int{1, 2, 3, 4, 5}
+
+		// Abort after 200ms
+		abortDur := sleepPerStage * 2
+		go func() {
+			<-time.After(abortDur)
+			close(done)
+		}()
+
+		go func() {
+			for _, v := range data {
+				in <- v
+			}
+			close(in)
+		}()
+
+		result := make([]string, 0)
+		for s := range ExecutePipeline(in, done, []Stage{}...) {
+			result = append(result, s.(string))
+		}
+
+		require.Len(t, result, 0)
+	})
 }

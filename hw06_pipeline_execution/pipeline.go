@@ -9,40 +9,37 @@ type (
 type Stage func(in In) (out Out)
 
 func ExecutePipeline(in In, done In, stages ...Stage) Out {
-	checkDone := func(done In) bool {
-		if done != nil {
-			select {
-			case _, ok := <-done:
-				if !ok {
-					return false
-				}
-			default:
-			}
-		}
-
-		return true
-	}
-
-	proxy := func(readIn In, write Bi, done In) {
-		for value := range readIn {
-			if !checkDone(done) {
-				close(write)
-				return
-			}
-
-			write <- value
-		}
-		close(write)
-	}
-
-	stageWrapper := func(in In, done In, stage Stage) Out {
+	proxy := func(in In, done In) Out {
 		write := make(Bi)
-		go proxy(in, write, done)
-		return stage(write)
+		go func() {
+			for value := range in {
+				if done != nil {
+					select {
+					case _, ok := <-done:
+						if !ok {
+							close(write)
+							return
+						}
+					default:
+					}
+				}
+
+				write <- value
+			}
+			close(write)
+		}()
+
+		return write
+	}
+
+	if len(stages) == 0 {
+		closedChan := make(Bi)
+		close(closedChan)
+		return closedChan
 	}
 
 	for _, stage := range stages {
-		in = stageWrapper(in, done, stage)
+		in = stage(proxy(in, done))
 	}
 
 	return in
