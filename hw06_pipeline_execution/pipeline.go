@@ -35,7 +35,7 @@ func ExecutePipeline(in In, done In, stages ...Stage) Out {
 	if len(stages) == 0 {
 		closedChan := make(Bi)
 		close(closedChan)
-		return closedChan
+		return proxy(in, closedChan)
 	}
 
 	for _, stage := range stages {
