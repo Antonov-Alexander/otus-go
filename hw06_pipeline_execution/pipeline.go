@@ -9,6 +9,10 @@ type (
 type Stage func(in In) (out Out)
 
 func ExecutePipeline(in In, done In, stages ...Stage) Out {
+	if len(stages) == 0 {
+		return done
+	}
+
 	proxy := func(in In, done In) Out {
 		write := make(Bi)
 		go func() {
@@ -30,12 +34,6 @@ func ExecutePipeline(in In, done In, stages ...Stage) Out {
 		}()
 
 		return write
-	}
-
-	if len(stages) == 0 {
-		closedChan := make(Bi)
-		close(closedChan)
-		return proxy(in, closedChan)
 	}
 
 	for _, stage := range stages {
