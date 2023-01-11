@@ -28,7 +28,7 @@ func ReadDir(dir string) (Environment, error) {
 	zeroString := string([]byte{0x00})
 
 	for _, dirFile := range dirFiles {
-		if dirFile.IsDir() {
+		if dirFile.IsDir() || strings.Contains(dirFile.Name(), "=") {
 			continue
 		}
 
@@ -44,7 +44,10 @@ func ReadDir(dir string) (Environment, error) {
 		}
 
 		value = strings.ReplaceAll(strings.TrimRight(value, "\n\t "), zeroString, "\n")
-		result[dirFile.Name()] = EnvValue{value, value == ""}
+		result[dirFile.Name()] = EnvValue{
+			Value:      value,
+			NeedRemove: value == "",
+		}
 	}
 
 	return result, nil
