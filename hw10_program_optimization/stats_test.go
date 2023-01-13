@@ -1,3 +1,4 @@
+//go:build !bench
 // +build !bench
 
 package hw10programoptimization
@@ -35,5 +36,20 @@ func TestGetDomainStat(t *testing.T) {
 		result, err := GetDomainStat(bytes.NewBufferString(data), "unknown")
 		require.NoError(t, err)
 		require.Equal(t, DomainStat{}, result)
+	})
+
+	t.Run("Only emails json", func(t *testing.T) {
+		onlyEmailsData := `{"Email":"test1@test1.ru"}
+{"Email":"test2@test1.ru"}
+{"Email":"test1@test1.com"}
+{"Email":"test2@test1.com"}
+{"Email":"test1@test2.ru"}
+`
+		result, err := GetDomainStat(bytes.NewBufferString(onlyEmailsData), "ru")
+		require.NoError(t, err)
+		require.Equal(t, DomainStat{
+			"test1.ru": 2,
+			"test2.ru": 1,
+		}, result)
 	})
 }
