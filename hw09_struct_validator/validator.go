@@ -47,6 +47,10 @@ var typeValidators = map[string][]string{
 }
 
 func Validate(v interface{}) error {
+	if reflect.TypeOf(v).Kind().String() != "struct" {
+		return errors.New("variable is not a struct")
+	}
+
 	objectFields := reflect.VisibleFields(reflect.TypeOf(v))
 	objectValue := reflect.Indirect(reflect.ValueOf(v))
 
