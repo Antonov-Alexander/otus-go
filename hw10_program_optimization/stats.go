@@ -32,14 +32,12 @@ func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
 		}
 
 		email := string(parsed.GetStringBytes("Email"))
-		for pos, char := range email {
-			if char == 64 {
-				emailDomain := strings.ToLower(email[pos+1:])
-				for domainPos, domainChar := range emailDomain {
-					if domainChar == 46 && domain == strings.ToLower(emailDomain[domainPos+1:]) {
-						result[emailDomain]++
-					}
-				}
+		emailParts := strings.SplitN(email, "@", 2)
+		if len(emailParts) > 1 {
+			emailDomain := strings.ToLower(emailParts[1])
+			domainParts := strings.SplitN(emailDomain, ".", 2)
+			if len(domainParts) > 1 && domainParts[1] == domain {
+				result[emailDomain]++
 			}
 		}
 	}

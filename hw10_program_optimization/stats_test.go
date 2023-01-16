@@ -38,7 +38,7 @@ func TestGetDomainStat(t *testing.T) {
 		require.Equal(t, DomainStat{}, result)
 	})
 
-	t.Run("Only emails json", func(t *testing.T) {
+	t.Run("only emails json", func(t *testing.T) {
 		onlyEmailsData := `{"Email":"test1@test1.ru"}
 {"Email":"test2@test1.ru"}
 {"Email":"test1@test1.com"}
@@ -52,4 +52,29 @@ func TestGetDomainStat(t *testing.T) {
 			"test2.ru": 1,
 		}, result)
 	})
+
+	t.Run("invalid json", func(t *testing.T) {
+		onlyEmailsData := `{"Email":"test1@test1.ru"}
+{"Email":"test2@test1.ru"
+{"Email":"test1@test2.ru"}
+`
+		_, err := GetDomainStat(bytes.NewBufferString(onlyEmailsData), "ru")
+		require.Error(t, err)
+	})
+
+	t.Run("invalid email", func(t *testing.T) {
+		onlyEmailsData := `{"Email":"test1@test1.ru"}
+{"Email":"test2@test1"}
+{"Email":"test2test1.ru"}
+{"Email":"test2test1"}
+{"Email":"test1@test2.ru"}
+`
+		result, err := GetDomainStat(bytes.NewBufferString(onlyEmailsData), "ru")
+		require.NoError(t, err)
+		require.Equal(t, DomainStat{
+			"test1.ru": 1,
+			"test2.ru": 1,
+		}, result)
+	})
+
 }
