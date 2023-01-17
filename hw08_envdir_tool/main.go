@@ -1,5 +1,19 @@
 package main
 
+import (
+	"fmt"
+	"os"
+)
+
 func main() {
-	// Place your code here.
+	if len(os.Args[1:]) < 2 {
+		return
+	}
+
+	env, err := ReadDir(os.Args[1])
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	os.Exit(RunCmd(os.Args[2:], env))
 }
