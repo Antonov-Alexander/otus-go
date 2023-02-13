@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	IpCheckType = iota
-	LoginCheckType
-	PasswordCheckType
+	IpCheckType       = 1
+	LoginCheckType    = 2
+	PasswordCheckType = 3
 )
 
 func GetCheck(checkType int) (types.Check, error) {

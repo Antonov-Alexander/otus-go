@@ -68,17 +68,18 @@ func (m *MemoryStorage) Inc(item types.Item, limit types.Limit) bool {
 			clearedCount++
 			counter[idx] = BucketValue{}
 			clearedIdx = idx
-		} else {
-			// ищем максимальный timestamp среди бакетов
-			if bucket.Timestamp > maxActiveTimestamp {
-				maxActiveTimestamp = bucket.Timestamp
-			}
+			continue
+		}
 
-			// ищем минимальный бакет, который можно заинкрементить
-			if minAvailableTimestamp < bucket.Timestamp && bucket.Value < bucketInfo.Limit {
-				minAvailableTimestamp = bucket.Timestamp
-				availableIdx = idx
-			}
+		// ищем максимальный timestamp среди бакетов
+		if bucket.Timestamp > maxActiveTimestamp {
+			maxActiveTimestamp = bucket.Timestamp
+		}
+
+		// ищем минимальный бакет, который можно заинкрементить
+		if minAvailableTimestamp < bucket.Timestamp && bucket.Value < bucketInfo.Limit {
+			minAvailableTimestamp = bucket.Timestamp
+			availableIdx = idx
 		}
 	}
 
@@ -151,23 +152,26 @@ func (m *MemoryStorage) getBucketInfo(limit types.Limit) BucketInfo {
 }
 
 func (*MemoryStorage) calcBucket(limit types.Limit) (bucket BucketInfo) {
+	defer func() {
+		bucket.Count = Precision * limit.Interval / bucket.Interval
+	}()
+
 	if limit.Limit <= limit.Interval {
 		// Кейс 1: лимит < интервала
 		bucket.Interval = Precision * limit.Interval / limit.Limit
 		bucket.Limit = 1
-	} else {
-		bucketsCount := BucketsCount
-		if bucketsCount > limit.Limit {
-			bucketsCount = limit.Limit
-		}
-
-		// Кейс 2: лимит > интервала
-		bucket.Interval = Precision * limit.Interval / bucketsCount
-		bucket.Limit = limit.Limit / bucketsCount
+		return bucket
 	}
 
-	bucket.Count = Precision * limit.Interval / bucket.Interval
-	return
+	bucketsCount := BucketsCount
+	if bucketsCount > limit.Limit {
+		bucketsCount = limit.Limit
+	}
+
+	// Кейс 2: лимит > интервала
+	bucket.Interval = Precision * limit.Interval / bucketsCount
+	bucket.Limit = limit.Limit / bucketsCount
+	return bucket
 }
 
 func (m *MemoryStorage) initCounter(bucketInfo BucketInfo, startTimestamp int) []BucketValue {

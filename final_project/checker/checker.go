@@ -52,7 +52,7 @@ func (c *Checker) Check(request types.Request) (err error) {
 		}
 	}
 
-	return
+	return err
 }
 
 func (c *Checker) runListMethod(checkType int, request types.Request, method string) error {

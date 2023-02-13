@@ -11,8 +11,7 @@ const (
 )
 
 func GetStorage(storageType int) (types.Storage, error) {
-	switch storageType {
-	case MemoryStorageType:
+	if storageType == MemoryStorageType {
 		storage := &MemoryStorage{}
 		storage.Init()
 		return storage, nil
