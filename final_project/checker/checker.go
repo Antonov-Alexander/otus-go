@@ -12,8 +12,15 @@ type Checker struct {
 	checks map[int]types.Check
 }
 
+const (
+	AddWhiteListItemMethod    = "AddWhiteListItem"
+	AddBlackListItemMethod    = "AddBlackListItem"
+	RemoveWhiteListItemMethod = "RemoveWhiteListItem"
+	RemoveBlackListItemMethod = "RemoveBlackListItem"
+)
+
 func (c *Checker) Init(checkTypes []int, storageType int, config types.Config) error {
-	if err := config.Init(); err != nil {
+	if err := config.Init(checkTypes); err != nil {
 		return errors.New("config loading error")
 	}
 
@@ -55,16 +62,16 @@ func (c *Checker) Check(request types.Request) (err error) {
 	return err
 }
 
-func (c *Checker) runListMethod(checkType int, request types.Request, method string) error {
+func (c *Checker) CallListMethod(checkType int, request types.Request, method string) error {
 	if check, ok := c.checks[checkType]; ok {
 		switch method {
-		case "AddWhiteListItem":
+		case AddWhiteListItemMethod:
 			c.checks[checkType].AddWhiteListItem(check.GetItem(request))
-		case "RemoveWhiteListItem":
-			c.checks[checkType].RemoveWhiteListItem(check.GetItem(request))
-		case "AddBlackListItem":
+		case AddBlackListItemMethod:
 			c.checks[checkType].AddBlackListItem(check.GetItem(request))
-		case "RemoveBlackListItem":
+		case RemoveWhiteListItemMethod:
+			c.checks[checkType].RemoveWhiteListItem(check.GetItem(request))
+		case RemoveBlackListItemMethod:
 			c.checks[checkType].RemoveBlackListItem(check.GetItem(request))
 		}
 		return nil
@@ -74,19 +81,19 @@ func (c *Checker) runListMethod(checkType int, request types.Request, method str
 }
 
 func (c *Checker) AddWhiteListItem(checkType int, request types.Request) error {
-	return c.runListMethod(checkType, request, "AddWhiteListItem")
-}
-
-func (c *Checker) RemoveWhiteListItem(checkType int, request types.Request) error {
-	return c.runListMethod(checkType, request, "RemoveWhiteListItem")
+	return c.CallListMethod(checkType, request, AddWhiteListItemMethod)
 }
 
 func (c *Checker) AddBlackListItem(checkType int, request types.Request) error {
-	return c.runListMethod(checkType, request, "AddBlackListItem")
+	return c.CallListMethod(checkType, request, AddBlackListItemMethod)
+}
+
+func (c *Checker) RemoveWhiteListItem(checkType int, request types.Request) error {
+	return c.CallListMethod(checkType, request, RemoveWhiteListItemMethod)
 }
 
 func (c *Checker) RemoveBlackListItem(checkType int, request types.Request) error {
-	return c.runListMethod(checkType, request, "RemoveBlackListItem")
+	return c.CallListMethod(checkType, request, RemoveBlackListItemMethod)
 }
 
 func (c *Checker) ClearCounter(checkType int, request types.Request) error {

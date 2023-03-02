@@ -2,7 +2,6 @@ package checks
 
 import (
 	"errors"
-
 	"github.com/Antonov-Alexander/otus-go/final_project/types"
 )
 
@@ -10,21 +9,45 @@ const (
 	IpCheckType       = 1
 	LoginCheckType    = 2
 	PasswordCheckType = 3
+	IpCheckName       = "ip"
+	LoginCheckName    = "login"
+	PasswordCheckName = "password"
 )
+
+var TypeNames = map[int]string{
+	IpCheckType:       IpCheckName,
+	LoginCheckType:    LoginCheckName,
+	PasswordCheckType: PasswordCheckName,
+}
+
+var NameTypes = map[string]int{
+	IpCheckName:       IpCheckType,
+	LoginCheckName:    LoginCheckType,
+	PasswordCheckName: PasswordCheckType,
+}
 
 func GetCheck(checkType int) (types.Check, error) {
 	var getItem func(request types.Request) types.Item
 	switch checkType {
 	case IpCheckType:
 		getItem = func(request types.Request) types.Item {
+			if request.IP == 0 {
+				return nil
+			}
 			return request.IP
 		}
 	case LoginCheckType:
 		getItem = func(request types.Request) types.Item {
+			if request.Login == "" {
+				return nil
+			}
 			return request.Login
 		}
 	case PasswordCheckType:
 		getItem = func(request types.Request) types.Item {
+			if request.Password == "" {
+				return nil
+			}
 			return request.Password
 		}
 	}
@@ -34,6 +57,16 @@ func GetCheck(checkType int) (types.Check, error) {
 	}
 
 	return nil, errors.New("undefined check type")
+}
+
+func GetCheckName(checkType int) (string, bool) {
+	value, ok := TypeNames[checkType]
+	return value, ok
+}
+
+func GetCheckType(checkName string) (int, bool) {
+	value, ok := NameTypes[checkName]
+	return value, ok
 }
 
 type Check struct {
@@ -68,6 +101,9 @@ func (*Check) GetDefaultConfig() types.CheckConfig {
 
 func (b *Check) Check(request types.Request) error {
 	item := b.GetItem(request)
+	if item == nil {
+		return nil
+	}
 
 	if _, ok := b.config.WhiteList[item]; ok {
 		return nil

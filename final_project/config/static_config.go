@@ -6,7 +6,7 @@ type StaticConfig struct {
 	BaseConfig
 }
 
-func (c *StaticConfig) Init() error {
+func (c *StaticConfig) Init([]int) error {
 	return nil
 }
 

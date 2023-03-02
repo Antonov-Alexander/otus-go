@@ -13,7 +13,7 @@ type Limit struct {
 }
 
 type Config interface {
-	Init() error
+	Init(checkTypes []int) error
 	GetCheckConfig(checkName int) (CheckConfig, bool)
 }
 
