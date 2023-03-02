@@ -1,0 +1,24 @@
+version: "3.9"
+services:
+  postgres:
+    container_name: db
+    image: "postgres:15"
+    environment:
+      POSTGRES_USER: "brute"
+      POSTGRES_PASSWORD: "force"
+      PGDATA: /data/postgres
+    volumes:
+      - postgres:/data/postgres
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - postgres
+    restart: unless-stopped
+
+networks:
+  postgres:
+    driver: bridge
+
+volumes:
+  postgres:
